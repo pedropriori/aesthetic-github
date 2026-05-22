@@ -1,0 +1,70 @@
+name: aesthetic-github (daily log)
+
+on:
+  schedule:
+    - cron: "13 3 * * *"
+    - cron: "13 12 * * *"
+    - cron: "13 21 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aesthetic-github-daily
+  cancel-in-progress: false
+
+jobs:
+  daily-log:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Generate daily log
+        env:
+          AESTHETIC_VAULT_REPO: ${{ secrets.AESTHETIC_VAULT_REPO }}
+          AESTHETIC_VAULT_TOKEN: ${{ secrets.AESTHETIC_VAULT_TOKEN }}
+          AESTHETIC_VAULT_BRANCH: ${{ secrets.AESTHETIC_VAULT_BRANCH }}
+        run: node dist/append-daily-log.js
+
+      - name: Commit and push (only if changed)
+        env:
+          AESTHETIC_GIT_NAME: ${{ secrets.AESTHETIC_GIT_NAME }}
+          AESTHETIC_GIT_EMAIL: ${{ secrets.AESTHETIC_GIT_EMAIL }}
+        run: |
+          if [ -z "$AESTHETIC_GIT_NAME" ] || [ -z "$AESTHETIC_GIT_EMAIL" ]; then
+            echo "Missing secrets AESTHETIC_GIT_NAME / AESTHETIC_GIT_EMAIL."
+            echo "Configure them in: Repository Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+          git config user.name "$AESTHETIC_GIT_NAME"
+          git config user.email "$AESTHETIC_GIT_EMAIL"
+
+          git add -A
+          git diff --staged --quiet && exit 0
+
+          TODAY="$(date -u +%Y-%m-%d)"
+          git commit -m "chore(aesthetic): daily log ${TODAY}"
+          git pull --rebase
+          for i in 1 2 3; do
+            git push && break
+            echo "push falhou (tentativa ${i}); aguardando e tentando novamente..."
+            sleep 5
+          done
+

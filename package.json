@@ -1,0 +1,18 @@
+{
+  "name": "aesthetic-github",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Automação autoral para manter seu GitHub esteticamente ativo com logs diários reais (sem commits vazios).",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/append-daily-log.js",
+    "dev": "node --enable-source-maps dist/append-daily-log.js"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.2"
+  }
+}
+
