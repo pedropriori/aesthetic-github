@@ -171,9 +171,9 @@ async function appendVaultActivityIfNeeded(input: {
   readonly projectRootPath: string;
   readonly today: TodayUtc;
   readonly dailyLogPath: string;
-}): Promise<boolean> {
+}): Promise<{ readonly vaultActivityAppended: boolean; readonly stateUpdated: boolean }> {
   const vaultEnv: { readonly repo: string; readonly branch?: string; readonly token: string } | null = getVaultEnv();
-  if (!vaultEnv) return false;
+  if (!vaultEnv) return { vaultActivityAppended: false, stateUpdated: false };
   const aestheticDirectoryPath: string = path.join(input.projectRootPath, ".aesthetic");
   const statePath: string = path.join(aestheticDirectoryPath, "state.json");
   await ensureDirectoryExists({ directoryPath: aestheticDirectoryPath });
@@ -183,17 +183,28 @@ async function appendVaultActivityIfNeeded(input: {
   const todayStartUtcIso: string = getStartOfDayUtcIso({ dateIso: input.today.dateIso });
   const newCommits: VaultCommitItem[] = selectNewVaultCommits({ commits, lastProcessedSha, todayStartUtcIso }).reverse();
   const latestSha: string | undefined = commits[0]?.sha;
+  const nextLastProcessedSha: string | undefined = latestSha ?? lastProcessedSha;
   const nextState: AestheticStateV1 = {
     version: 1,
     vault: {
       repo: vaultEnv.repo,
       branch: vaultEnv.branch,
-      lastProcessedSha: latestSha ?? lastProcessedSha,
+      lastProcessedSha: nextLastProcessedSha,
       lastCheckedAtUtc: input.today.dateTimeIso
     }
   };
-  await writeJsonFile({ filePath: statePath, value: nextState });
-  if (newCommits.length === 0) return false;
+  const shouldUpdateState: boolean =
+    existingState === null ||
+    existingState.vault?.repo !== nextState.vault?.repo ||
+    existingState.vault?.branch !== nextState.vault?.branch ||
+    existingState.vault?.lastProcessedSha !== nextState.vault?.lastProcessedSha;
+  if (shouldUpdateState) {
+    await writeJsonFile({ filePath: statePath, value: nextState });
+  }
+  process.stdout.write(
+    `aesthetic-github: vault commits fetched=${commits.length}, new=${newCommits.length}, lastProcessed=${lastProcessedSha ?? "none"}, latest=${latestSha ?? "none"}\n`
+  );
+  if (newCommits.length === 0) return { vaultActivityAppended: false, stateUpdated: shouldUpdateState };
   const currentLog: string = await readFile(input.dailyLogPath, { encoding: "utf-8" });
   const sectionHeader: string = `### Vault activity (${vaultEnv.repo})`;
   const section: string = buildVaultSectionMarkdown({ repo: vaultEnv.repo, commits: newCommits });
@@ -217,7 +228,7 @@ async function appendVaultActivityIfNeeded(input: {
       ? `${currentLog}\n${section}`
       : `${currentLog}\n\n${section}`;
   await writeFile(input.dailyLogPath, nextLog, { encoding: "utf-8" });
-  return true;
+  return { vaultActivityAppended: true, stateUpdated: shouldUpdateState };
 }
 
 export async function executeAppendDailyLog(options: AppendDailyLogOptions): Promise<void> {
@@ -231,18 +242,19 @@ export async function executeAppendDailyLog(options: AppendDailyLogOptions): Pro
     content: buildDailyLogMarkdown(today)
   });
   const indexUpdated: boolean = await appendIndexIfMissing({ indexPath, dateIso: today.dateIso });
-  const vaultActivityAppended: boolean = await appendVaultActivityIfNeeded({
+  const vaultResult: { readonly vaultActivityAppended: boolean; readonly stateUpdated: boolean } = await appendVaultActivityIfNeeded({
     projectRootPath: options.projectRootPath,
     today,
     dailyLogPath
   });
+  const vaultActivityAppended: boolean = vaultResult.vaultActivityAppended;
   const changedFiles: string[] = [];
   if (dailyLogCreated) changedFiles.push(path.relative(options.projectRootPath, dailyLogPath));
   if (indexUpdated) changedFiles.push(path.relative(options.projectRootPath, indexPath));
   if (vaultActivityAppended && !changedFiles.includes(path.relative(options.projectRootPath, dailyLogPath))) {
     changedFiles.push(path.relative(options.projectRootPath, dailyLogPath));
   }
-  if (vaultActivityAppended) changedFiles.push(path.relative(options.projectRootPath, path.join(".aesthetic", "state.json")));
+  if (vaultResult.stateUpdated) changedFiles.push(path.relative(options.projectRootPath, path.join(".aesthetic", "state.json")));
   const output: string =
     changedFiles.length === 0 ? "aesthetic-github: nada a atualizar hoje." : `aesthetic-github: atualizado (${changedFiles.join(", ")}).`;
   process.stdout.write(`${output}\n`);
