@@ -28,6 +28,29 @@ interface VaultCommitItem {
   readonly authorDateUtc: string;
 }
 
+interface GitHubCommitListItem {
+  readonly sha?: unknown;
+  readonly html_url?: unknown;
+  readonly commit?: {
+    readonly message?: unknown;
+    readonly author?: {
+      readonly date?: unknown;
+    };
+  };
+}
+
+function parseVaultCommitItem(input: { readonly item: GitHubCommitListItem }): VaultCommitItem | null {
+  const sha: unknown = input.item.sha;
+  const htmlUrl: unknown = input.item.html_url;
+  const message: unknown = input.item.commit?.message;
+  const authorDateUtc: unknown = input.item.commit?.author?.date;
+  if (typeof sha !== "string") return null;
+  if (typeof htmlUrl !== "string") return null;
+  if (typeof message !== "string") return null;
+  if (typeof authorDateUtc !== "string") return null;
+  return { sha, htmlUrl, message, authorDateUtc };
+}
+
 function getTodayUtc(): TodayUtc {
   const now: Date = new Date();
   return {
@@ -125,16 +148,9 @@ async function fetchVaultCommits(input: {
   const json: unknown = await response.json();
   if (!Array.isArray(json)) return [];
   return json
-    .map((item: any): VaultCommitItem | null => {
-      const sha: unknown = item?.sha;
-      const htmlUrl: unknown = item?.html_url;
-      const message: unknown = item?.commit?.message;
-      const authorDateUtc: unknown = item?.commit?.author?.date;
-      if (typeof sha !== "string") return null;
-      if (typeof htmlUrl !== "string") return null;
-      if (typeof message !== "string") return null;
-      if (typeof authorDateUtc !== "string") return null;
-      return { sha, htmlUrl, message, authorDateUtc };
+    .map((item: unknown): VaultCommitItem | null => {
+      if (typeof item !== "object" || item === null) return null;
+      return parseVaultCommitItem({ item: item as GitHubCommitListItem });
     })
     .filter((x: VaultCommitItem | null): x is VaultCommitItem => x !== null);
 }

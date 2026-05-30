@@ -8,7 +8,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/append-daily-log.js",
-    "dev": "node --enable-source-maps dist/append-daily-log.js"
+    "dev": "node --enable-source-maps dist/append-daily-log.js",
+    "profile-kit": "node dist/generate-profile-kit.js",
+    "profile-kit:dev": "node --enable-source-maps dist/generate-profile-kit.js"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

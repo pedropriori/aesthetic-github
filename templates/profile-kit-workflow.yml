@@ -1,0 +1,63 @@
+name: aesthetic-github (profile kit)
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aesthetic-profile-kit
+  cancel-in-progress: false
+
+jobs:
+  build-profile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout profile repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: profile
+
+      - name: Checkout aesthetic-github generator
+        uses: actions/checkout@v4
+        with:
+          # Troque para "seu-user/aesthetic-github" caso esteja em outro owner.
+          repository: kadil/aesthetic-github
+          fetch-depth: 0
+          path: generator
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: generator/package-lock.json
+
+      - name: Install (generator)
+        working-directory: generator
+        run: npm ci
+
+      - name: Build (generator)
+        working-directory: generator
+        run: npm run build
+
+      - name: Generate profile kit
+        working-directory: generator
+        run: node dist/generate-profile-kit.js --out ../profile
+
+      - name: Commit and push (only if changed)
+        working-directory: profile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet && exit 0
+          TODAY="$(date -u +%Y-%m-%d)"
+          git commit -m "chore(profile): update profile kit ${TODAY}"
+          git pull --rebase
+          git push
+

@@ -1,0 +1,72 @@
+{
+  "identity": {
+    "displayName": "Seu Nome",
+    "headline": "Fullstack • AI • DevRel — entrego produto ponta-a-ponta com padrão premium",
+    "heroQuote": "Be, and it is",
+    "timezone": "America/Sao_Paulo"
+  },
+  "cta": {
+    "email": "seu-email@exemplo.com",
+    "subject": "[GitHub] Vamos conversar?",
+    "body": "Oi! Vi seu perfil no GitHub e gostaria de falar sobre um projeto.\n\nContexto:\n- Prazo:\n- Escopo:\n- Budget:\n\nObrigado!",
+    "label": "Fale comigo por email"
+  },
+  "layout": {
+    "blueprint": "creator-premium"
+  },
+  "offers": {
+    "availability": "Agenda aberta para novos projetos",
+    "packages": [
+      {
+        "title": "Audit",
+        "bullets": [
+          "Diagnóstico técnico (arquitetura, DX, performance)",
+          "Plano de ação priorizado (impacto x esforço)",
+          "Quick wins implementáveis em 24–72h"
+        ]
+      },
+      {
+        "title": "Build",
+        "bullets": [
+          "Entrega de feature/módulo ponta-a-ponta",
+          "Qualidade: testes, observabilidade, documentação",
+          "Deploy e handoff para o time"
+        ]
+      },
+      {
+        "title": "Retainer",
+        "bullets": [
+          "Acompanhamento semanal e evolução contínua",
+          "Code review e padrões de arquitetura",
+          "Performance e confiabilidade em produção"
+        ]
+      }
+    ]
+  },
+  "proof": {
+    "primary": "metrics",
+    "secondary": [],
+    "limits": {
+      "maxSecondaryCards": 2,
+      "maxFeaturedWorkItems": 6
+    }
+  },
+  "theme": {
+    "preset": "minimal-premium-dark",
+    "overrides": {
+      "accentColorHex": "#8b5cf6"
+    }
+  },
+  "links": {
+    "linkedin": "https://www.linkedin.com/in/seu-perfil/",
+    "x": "https://x.com/seu-perfil"
+  },
+  "featuredWork": [
+    {
+      "title": "Projeto A",
+      "description": "Resultado mensurável em uma linha (sem exagero).",
+      "url": "https://github.com/seu-user/seu-repo"
+    }
+  ]
+}
+
